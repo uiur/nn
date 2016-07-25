@@ -1,9 +1,11 @@
 import numpy as np
+import matplotlib.pyplot as plt
+
 np.random.seed(42)
 
 
 def sigmoid(z):
-    return 1 / (1 + np.exp(-z))
+    return 1.0 / (1.0 + np.exp(-z))
 
 
 def sigmoid_prime(z):
@@ -23,8 +25,8 @@ class MLP():
         for i in range(1, len(self.layers)):
             current_layer = self.layers[i]
             input_layer = self.layers[i-1]
-            self.weights.append(np.random.rand(current_layer, input_layer))
-            self.biases.append(np.random.rand(current_layer))
+            self.weights.append(np.random.randn(current_layer, input_layer))
+            self.biases.append(np.random.randn(current_layer))
 
     def feedforward(self, x):
         activations = [x]
@@ -67,9 +69,6 @@ class MLP():
                 w_delta_sum[l] += w_derivatives[i][l]
                 b_delta_sum[l] += b_derivatives[i][l]
 
-        # print(self.weights)
-        # print(-learning_rate / batch_num)
-        # print(-learning_rate / batch_num * w_delta_sum[1])
         for l in range(1, len(self.layers)):
             self.weights[l] -= learning_rate / batch_num * w_delta_sum[l]
             self.biases[l] -= learning_rate / batch_num * b_delta_sum[l]
@@ -89,9 +88,7 @@ class MLP():
             errors[-1] = nabla * sigmoid_prime(weighted_inputs[-1])
 
             for l in range(len(errors)-2, 0, -1):
-                layer_error = np.dot(self.weights[l+1].T, errors[l+1]) * sigmoid_prime(weighted_inputs[l+1])
-
-                errors[l] = layer_error
+                errors[l] = np.dot(self.weights[l+1].T, errors[l+1]) * sigmoid_prime(weighted_inputs[l])
 
             d_w = [None]
             d_b = [None]
@@ -134,21 +131,3 @@ def evaluate(network, X, y):
     loss = network.loss(X, y)
 
     return accuracy, loss
-
-if __name__ == "__main__":
-    network = MLP([2, 1])
-
-    X = 2 * np.random.randn(10000, network.layers[0])
-    y = np.array([x[0] < x[1] for x in X]) * 1.0 # y > x
-
-    X_train, y_train, X_valid, y_valid = test_split(X, y, rate=0.2)
-
-    for epoch in range(10000):
-        X_batch, y_batch = batch(X_train, y_train)
-        network.train_on_batch(X_batch, y_batch, learning_rate=0.01)
-
-        if epoch % 100 == 0:
-            train_accuracy, train_loss = evaluate(network, X_batch, y_batch)
-            valid_accuracy, valid_loss = evaluate(network, X_valid, y_valid)
-
-            print("epoch: %d\ttrain_accuracy: %f\ttrain_loss: %f\tvalid_accuracy: %f\tvalid_loss: %f" % (epoch, train_accuracy, train_loss, valid_accuracy, valid_loss))
