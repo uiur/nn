@@ -49,7 +49,7 @@ class MLP():
     # mean squared error
     def loss(self, X, y):
         outputs = self.output(X)
-        return np.mean((y - outputs) ** 2) / 2.0
+        return 0.5 * np.mean(np.linalg.norm(y - outputs, axis=1) ** 2)
 
     def output(self, X):
         return np.array([self.feedforward(x)[0][-1] for x in X])
@@ -123,11 +123,3 @@ def test_split(X, y, rate=0.0):
     train_index = np.array(list(set(np.arange(example_size)) - set(validation_index)))
 
     return X[train_index], y[train_index], X[validation_index], y[validation_index]
-
-
-def evaluate(network, X, y):
-    y_out = network.output(X)
-    accuracy = np.mean((y_out > 0.5).flatten() == (y == 1.0))
-    loss = network.loss(X, y)
-
-    return accuracy, loss

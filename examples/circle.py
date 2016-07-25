@@ -9,13 +9,21 @@ y = np.array([(x[0] ** 2) + (x[1] ** 2) < 1.0 ** 2 for x in X]) * 1.0
 
 X_train, y_train, X_valid, y_valid = mlp.test_split(X, y, rate=0.1)
 
+def evaluate(network, X, y):
+    y_out = network.output(X)
+    accuracy = np.mean((y_out > 0.5).flatten() == (y == 1.0))
+    loss = network.loss(X, y)
+
+    return accuracy, loss
+
+
 for epoch in range(4000):
     X_batch, y_batch = mlp.batch(X_train, y_train)
     network.train_on_batch(X_batch, y_batch, learning_rate=0.1)
 
     if epoch % 100 == 0:
-        train_accuracy, train_loss = mlp.evaluate(network, X_batch, y_batch)
-        valid_accuracy, valid_loss = mlp.evaluate(network, X_valid, y_valid)
+        train_accuracy, train_loss = evaluate(network, X_batch, y_batch)
+        valid_accuracy, valid_loss = evaluate(network, X_valid, y_valid)
 
         print("epoch: %d\ttrain_accuracy: %f\ttrain_loss: %f\tvalid_accuracy: %f\tvalid_loss: %f" % (epoch, train_accuracy, train_loss, valid_accuracy, valid_loss))
 
