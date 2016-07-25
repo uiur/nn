@@ -59,12 +59,20 @@ class MLP():
         batch_num = len(X)
         w_derivatives, b_derivatives = self.backprop(X, y)
 
-        for i in range(batch_num):
+        w_delta_sum = w_derivatives[0]
+        b_delta_sum = b_derivatives[0]
+
+        for i in range(1, batch_num):
             for l in range(1, len(self.layers)):
-                w_delta = w_derivatives[i][l]
-                b_delta = b_derivatives[i][l]
-                self.weights[l] -= learning_rate / batch_num * w_delta
-                self.biases[l] -= learning_rate / batch_num * b_delta
+                w_delta_sum[l] += w_derivatives[i][l]
+                b_delta_sum[l] += b_derivatives[i][l]
+
+        # print(self.weights)
+        # print(-learning_rate / batch_num)
+        # print(-learning_rate / batch_num * w_delta_sum[1])
+        for l in range(1, len(self.layers)):
+            self.weights[l] -= learning_rate / batch_num * w_delta_sum[l]
+            self.biases[l] -= learning_rate / batch_num * b_delta_sum[l]
 
     def backprop(self, X, y):
         batch_num = len(X)
@@ -104,10 +112,11 @@ class MLP():
 
 
 
-def batch(X, y, batch_size=50):
+def batch(X, y, batch_size=100):
     example_size = len(X)
     batch_index = np.random.choice(np.arange(example_size), size=batch_size)
     return X[batch_index], y[batch_index]
+
 
 def test_split(X, y, rate=0.0):
     example_size = len(X)
@@ -118,27 +127,28 @@ def test_split(X, y, rate=0.0):
 
     return X[train_index], y[train_index], X[validation_index], y[validation_index]
 
+
 def evaluate(network, X, y):
     y_out = network.output(X)
-    accuracy = np.mean((y_out > 0.5) == (y == 1.0))
+    accuracy = np.mean((y_out > 0.5).flatten() == (y == 1.0))
     loss = network.loss(X, y)
 
     return accuracy, loss
 
 if __name__ == "__main__":
-    network = MLP([2, 4, 1])
+    network = MLP([2, 1])
 
-    X = np.random.randn(10000, network.layers[0])
+    X = 2 * np.random.randn(10000, network.layers[0])
     y = np.array([x[0] < x[1] for x in X]) * 1.0 # y > x
 
     X_train, y_train, X_valid, y_valid = test_split(X, y, rate=0.2)
 
     for epoch in range(10000):
         X_batch, y_batch = batch(X_train, y_train)
-        network.train_on_batch(X_batch, y_batch, learning_rate=0.1)
+        network.train_on_batch(X_batch, y_batch, learning_rate=0.01)
 
         if epoch % 100 == 0:
-            train_accuracy, train_loss = evaluate(network, X_train, y_train)
+            train_accuracy, train_loss = evaluate(network, X_batch, y_batch)
             valid_accuracy, valid_loss = evaluate(network, X_valid, y_valid)
 
             print("epoch: %d\ttrain_accuracy: %f\ttrain_loss: %f\tvalid_accuracy: %f\tvalid_loss: %f" % (epoch, train_accuracy, train_loss, valid_accuracy, valid_loss))
