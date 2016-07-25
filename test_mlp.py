@@ -25,6 +25,7 @@ def test_mlp():
 
     assert ((network.output(X) > 0.5).flatten() == (y == 1.0)).all()
 
+
 def test_test_split():
     x = np.array([[1.0, 1.0], [2.0, 2.0]])
     y = np.array([[0], [1]])
