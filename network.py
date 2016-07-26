@@ -150,7 +150,7 @@ class Dense():
 
     def build(self, input_num):
         self.weight = np.random.randn(self.n, input_num) / np.sqrt(input_num)
-        self.bias = np.random.randn(self.n)
+        self.bias = np.random.rand(self.n)
         self.input_num = input_num
 
     def call(self, x):
