@@ -110,6 +110,12 @@ class Network():
 
         return w_derivatives, b_derivatives
 
+    def summary(self):
+        param_count = 0
+        for layer in self.layers[1:]:
+            param_count += layer.param_num()
+
+        return { 'params': param_count }
 
 
 class Sigmoid():
@@ -168,6 +174,12 @@ class Dense():
 
     def output_num(self):
         return self.n
+
+    def param_num(self):
+        weight_num = self.weight.shape[0] * self.weight.shape[1]
+        bias_num = self.bias.shape[0]
+
+        return weight_num + bias_num
 
 
 class Input():
