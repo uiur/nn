@@ -1,10 +1,9 @@
 import numpy as np
+np.random.seed(42)
 
 import mnist_loader
 import util
 from network import *
-
-np.random.seed(42)
 
 net = Network([
     Input(784),
@@ -25,7 +24,7 @@ def evaluate(network, X, y):
     return accuracy, loss
 
 batch_size = 30
-for epoch in range(100):
+for epoch in range(30):
     for i in range(len(X_train) // batch_size):
         X_batch, y_batch = util.batch(X_train, y_train, batch_size=batch_size)
         net.train_on_batch(X_batch, y_batch, learning_rate=1.)

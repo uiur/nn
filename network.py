@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class MeanSquaredError():
     def __init__(self):
         pass
@@ -9,6 +10,7 @@ class MeanSquaredError():
 
     def call(self, a, y):
         return 0.5 * np.mean(np.linalg.norm(y - a, axis=1) ** 2)
+
 
 class CrossEntropy():
     def __init__(self):
@@ -127,13 +129,21 @@ class Softmax():
         return self.call(z) * (1 - self.call(z))
 
 
+class ReLU():
+    def call(self, z):
+        return z * (z > 0)
+
+    def prime(self, z):
+        return (z > 0) * 1.
+
+
 class Dense():
     def __init__(self, n, activation=Sigmoid()):
         self.n = n
         self.activation_function = activation
 
     def build(self, input_num):
-        self.weight = np.random.randn(self.n, input_num)
+        self.weight = np.random.randn(self.n, input_num) / np.sqrt(input_num)
         self.bias = np.random.randn(self.n)
         self.input_num = input_num
 
