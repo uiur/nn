@@ -3,5 +3,13 @@ some implementations of neural networks using numpy.
 
 The motivation is to understand neural networks.
 
-## Reference
+To run a mnist example:
+```sh
+PYTHONPATH=. python examples/mnist.py
+```
+
+
+## References
 [Neural Networks and Deep Learning](http://neuralnetworksanddeeplearning.com/)
+
+[Deep Learning](http://www.deeplearningbook.org/)
