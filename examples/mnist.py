@@ -9,7 +9,7 @@ np.random.seed(42)
 net = Network([
     Input(784),
     Dense(30),
-    Dense(10),
+    Dense(10, activation=Softmax()),
 ], loss=CrossEntropy())
 
 (training_data, validation_data, test_data) = mnist_loader.load()

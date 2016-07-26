@@ -84,8 +84,11 @@ class Network():
             activations = self.feedforward(x)
 
             last_layer = self.layers[-1]
-            nabla = self.loss_function.nabla(last_layer.activation, y[i])
-            last_layer.error = nabla * last_layer.activation_function.prime(last_layer.weighted_input)
+            if self.loss_function.__class__.__name__ == 'CrossEntropy':
+                last_layer.error = last_layer.activation - y[i]
+            else:
+                nabla = self.loss_function.nabla(last_layer.activation, y[i])
+                last_layer.error = nabla * last_layer.activation_function.prime(last_layer.weighted_input)
 
             for l in range(len(self.layers)-1, 1, -1):
                 layer = self.layers[l]
@@ -117,7 +120,8 @@ class Sigmoid():
 
 class Softmax():
     def call(self, z):
-        return np.exp(z) / np.sum(np.exp(z))
+        c = np.max(z)
+        return np.exp(z - c) / np.sum(np.exp(z - c))
 
     def prime(self, z):
         return self.call(z) * (1 - self.call(z))
@@ -144,7 +148,7 @@ class Dense():
 
     # returns errors of a previous layer
     def backprop(self, prev_layer):
-        return np.dot(self.weight.T, self.error) * self.activation_function.prime(prev_layer.weighted_input)
+        return np.dot(self.weight.T, self.error) * prev_layer.activation_function.prime(prev_layer.weighted_input)
 
     def nabla(self, prev_layer):
         w_nabla = np.array([prev_layer.activation] * self.n) * np.array([self.error] * self.input_num).T
