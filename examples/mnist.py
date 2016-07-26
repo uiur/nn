@@ -26,7 +26,11 @@ def evaluate(network, X, y):
     return accuracy, loss
 
 batch_size = 30
-for epoch in range(30):
+
+early_stop_wait = 0
+prev_valid_loss = 100000.
+
+for epoch in range(50):
     for i in range(len(X_train) // batch_size):
         X_batch, y_batch = util.batch(X_train, y_train, batch_size=batch_size)
         net.train_on_batch(X_batch, y_batch, learning_rate=0.1)
@@ -35,5 +39,18 @@ for epoch in range(30):
     valid_accuracy, valid_loss = evaluate(net, X_valid, y_valid)
 
     print("epoch: %d\ttrain_accuracy: %f\ttrain_loss: %f\tvalid_accuracy: %f\tvalid_loss: %f" % (epoch, train_accuracy, train_loss, valid_accuracy, valid_loss))
+
+    # early stopping
+    if valid_loss > prev_valid_loss:
+        early_stop_wait += 1
+
+        if early_stop_wait >= 2:
+            break
+
+    else:
+        early_stop_wait = 0
+
+    prev_valid_loss = valid_loss
+
 
 print("test_accuracy: %f\ttest_loss: %f" % evaluate(net, X_test, y_test))
