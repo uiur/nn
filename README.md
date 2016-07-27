@@ -13,3 +13,5 @@ PYTHONPATH=. python examples/mnist.py
 [Neural Networks and Deep Learning](http://neuralnetworksanddeeplearning.com/)
 
 [Deep Learning](http://www.deeplearningbook.org/)
+
+[CS231n: Convolutional Neural Networks for Visual Recognition](http://cs231n.github.io/)
