@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 
 class MeanSquaredError():
@@ -38,7 +39,12 @@ class Network():
     def feedforward(self, x):
         activations = []
 
-        assert x.shape == tuple(self.layer_nums[0]) or x.shape[0] == self.layer_nums[0]
+        if type(self.layer_nums[0]) == int:
+            assert x.shape[0] == self.layer_nums[0]
+        else:
+            assert x.shape == tuple(self.layer_nums[0])
+
+        times = []
         for l in range(len(self.layers)):
             if l - 1 >= 0:
                 prev_activation = activations[l-1]
@@ -60,27 +66,14 @@ class Network():
 
     def train_on_batch(self, X, y, learning_rate=0.1):
         batch_num = len(X)
-        w_derivatives, b_derivatives = self.backprop(X, y)
+        self.backprop(X, y)
 
-        w_delta_sum = w_derivatives[0]
-        b_delta_sum = b_derivatives[0]
-
-        for i in range(1, batch_num):
-            for l in range(1, len(self.layers)):
-                w_delta_sum[l] += w_derivatives[i][l]
-                b_delta_sum[l] += b_derivatives[i][l]
-
-        for l in range(1, len(self.layers)):
-            layer = self.layers[l]
-            layer.weight -= learning_rate / batch_num * w_delta_sum[l]
-            layer.bias -= learning_rate / batch_num * b_delta_sum[l]
+        for layer in self.layers[1:]:
+            layer.update_params(-1 * learning_rate / batch_num)
 
     def backprop(self, X, y):
         batch_num = len(X)
         assert len(X) == len(y)
-
-        w_derivatives = []
-        b_derivatives = []
 
         for i, x in enumerate(X):
             activations = self.feedforward(x)
@@ -96,21 +89,9 @@ class Network():
                 layer = self.layers[l]
                 self.layers[l-1].error = layer.backprop(self.layers[l-1])
 
-            w_derivative = [None]
-            b_derivative = [None]
+            for layer, prev_layer in zip(self.layers[1:], self.layers[0:-1]):
+                layer.update_nabla(prev_layer)
 
-            for l in range(1, len(self.layers)):
-                layer = self.layers[l]
-                nabla = layer.nabla(self.layers[l-1])
-                if nabla:
-                    w_nabla, b_nabla = nabla
-                    w_derivative.append(w_nabla)
-                    b_derivative.append(b_nabla)
-
-            w_derivatives.append(w_derivative)
-            b_derivatives.append(b_derivative)
-
-        return w_derivatives, b_derivatives
 
     def summary(self):
         param_count = 0
@@ -149,11 +130,17 @@ class Layer():
     def activation_prime(self):
         return self.activation_function.prime(self.weighted_input)
 
+    def update_nabla(self, prev_layer):
+        self.nabla(prev_layer)
+
     def nabla(self, prev_layer):
         if self.param_num() == 0:
             return
 
         raise Exception("nabla must be implemented")
+
+    def update_params(self, c):
+        pass
 
 
 class Dense(Layer):
@@ -162,8 +149,14 @@ class Dense(Layer):
         self.activation_function = activation
 
     def build(self, input_num):
+        assert type(input_num) != tuple, 'the input shape of Dense layer must be 1 dimension'
+
         self.weight = np.random.randn(self.n, input_num) / np.sqrt(input_num)
         self.bias = np.random.rand(self.n)
+
+        self.weight_nabla = np.zeros_like(self.weight)
+        self.bias_nabla = np.zeros_like(self.bias)
+
         self.input_num = input_num
 
     def call(self, x):
@@ -184,6 +177,19 @@ class Dense(Layer):
         b_nabla = self.error
 
         return w_nabla, b_nabla
+
+    def update_nabla(self, prev_layer):
+        w_nabla, b_nabla = self.nabla(prev_layer)
+
+        self.weight_nabla += w_nabla
+        self.bias_nabla += b_nabla
+
+    def update_params(self, c):
+        self.weight += c * self.weight_nabla
+        self.bias += c * self.bias_nabla
+
+        self.weight_nabla *= 0.
+        self.bias_nabla *= 0.
 
     def output_num(self):
         return self.n

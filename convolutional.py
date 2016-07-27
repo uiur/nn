@@ -16,6 +16,10 @@ class Convolution(Layer):
     def build(self, input_shape):
         self.weight = np.random.randn(self.shape[0], self.shape[1], self.shape[2]) / np.sqrt(self.shape[1] * self.shape[2])
         self.bias = np.random.rand(self.shape[0])
+
+        self.weight_nabla = np.zeros_like(self.weight)
+        self.bias_nabla = np.zeros_like(self.bias)
+
         self.input_shape = input_shape
 
     def call(self, x):
@@ -67,10 +71,23 @@ class Convolution(Layer):
                 mode='constant',
                 constant_values=0.
             )
-            w_nabla.append(signal.correlate2d(a_with_pad, self.error[depth]))
+            w_nabla.append(signal.correlate2d(a_with_pad, self.error[depth], mode='valid'))
 
         w_nabla = np.array(w_nabla)
         return w_nabla, b_nabla
+
+    def update_nabla(self, prev_layer):
+        w_nabla, b_nabla = self.nabla(prev_layer)
+
+        self.weight_nabla += w_nabla
+        self.bias_nabla += b_nabla
+
+    def update_params(self, c):
+        self.weight += c * self.weight_nabla
+        self.bias += c * self.bias_nabla
+
+        self.weight_nabla *= 0.
+        self.bias_nabla *= 0.
 
     def output_num(self):
         return [self.shape[0], self.input_shape[-2], self.input_shape[-1]]
@@ -98,7 +115,7 @@ class MaxPooling(Layer):
             np.array(x.shape[1:]) // np.array(self.pool_size)
         )
 
-        self.argmax = np.zeros(self.output_num() + (2,), dtype=np.int32)
+        self.argmax = np.zeros(tuple(self.output_num()) + (2,), dtype=np.int32)
 
         for depth, layer in enumerate(x):
             patches = []
@@ -128,11 +145,11 @@ class MaxPooling(Layer):
         return prev_error
 
     def output_num(self):
-        return (
+        return [
             self.input_shape[0],
             self.input_shape[1] // self.pool_size[0],
             self.input_shape[2] // self.pool_size[1],
-        )
+        ]
 
     def param_num(self):
         return 0
