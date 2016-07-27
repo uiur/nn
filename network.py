@@ -26,26 +26,26 @@ class CrossEntropy():
 class Network():
     def __init__(self, layers, loss=MeanSquaredError()):
         self.layers = layers
-        self.layer_nums = [layer.output_num() for layer in self.layers]
+        self.layer_nums = []
         self.loss_function = loss
 
         for l, layer in enumerate(self.layers):
-            if l - 1 < 0:
-                continue
+            if l - 1 >= 0:
+                layer.build(self.layer_nums[l-1])
 
-            layer.build(self.layer_nums[l-1])
+            self.layer_nums.append(layer.output_num())
 
     def feedforward(self, x):
         activations = []
 
-        assert x.shape[0] == self.layer_nums[0]
+        assert x.shape == tuple(self.layer_nums[0]) or x.shape[0] == self.layer_nums[0]
         for l in range(len(self.layers)):
             if l - 1 >= 0:
                 prev_activation = activations[l-1]
             else:
                 prev_activation = x
 
-            activation, weighted_input = self.layers[l].call(prev_activation)
+            activation = self.layers[l].call(prev_activation)
             activations.append(activation)
 
         return activations
@@ -101,9 +101,11 @@ class Network():
 
             for l in range(1, len(self.layers)):
                 layer = self.layers[l]
-                w_nabla, b_nabla = layer.nabla(self.layers[l-1])
-                w_derivative.append(w_nabla)
-                b_derivative.append(b_nabla)
+                nabla = layer.nabla(self.layers[l-1])
+                if nabla:
+                    w_nabla, b_nabla = nabla
+                    w_derivative.append(w_nabla)
+                    b_derivative.append(b_nabla)
 
             w_derivatives.append(w_derivative)
             b_derivatives.append(b_derivative)
@@ -143,7 +145,18 @@ class ReLU():
         return (z > 0) * 1.
 
 
-class Dense():
+class Layer():
+    def activation_prime(self):
+        return self.activation_function.prime(self.weighted_input)
+
+    def nabla(self, prev_layer):
+        if self.param_num() == 0:
+            return
+
+        raise Exception("nabla must be implemented")
+
+
+class Dense(Layer):
     def __init__(self, n, activation=Sigmoid()):
         self.n = n
         self.activation_function = activation
@@ -160,11 +173,11 @@ class Dense():
         self.weighted_input = weighted_input
         self.activation = activation
 
-        return activation, weighted_input
+        return activation
 
     # returns errors of a previous layer
     def backprop(self, prev_layer):
-        return np.dot(self.weight.T, self.error) * prev_layer.activation_function.prime(prev_layer.weighted_input)
+        return np.dot(self.weight.T, self.error) * prev_layer.activation_prime()
 
     def nabla(self, prev_layer):
         w_nabla = np.array([prev_layer.activation] * self.n) * np.array([self.error] * self.input_num).T
@@ -182,16 +195,21 @@ class Dense():
         return weight_num + bias_num
 
 
-class Input():
-    def __init__(self, n):
-        self.n = n
+class Input(Layer):
+    '''
+        Input(784)
+        Input([28, 28])
+    '''
+    def __init__(self, shape):
+        self.shape = shape
 
     def build(self):
         pass
 
     def call(self, x):
+        self.weighted_input = x
         self.activation = x
-        return x, None
+        return x
 
     def output_num(self):
-        return self.n
+        return self.shape
