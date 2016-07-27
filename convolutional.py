@@ -2,6 +2,7 @@ import numpy as np
 from scipy import signal
 
 from network import *
+from skimage.measure import block_reduce
 
 
 class Convolution(Layer):
@@ -115,34 +116,16 @@ class MaxPooling(Layer):
             np.array(x.shape[1:]) // np.array(self.pool_size)
         )
 
-        self.argmax = np.zeros(tuple(self.output_num()) + (2,), dtype=np.int32)
+        # naive implemention is too slow, so I've decided to cheat on this
+        activations = block_reduce(x, block_size=(1, 2, 2), func=np.max)
+        upsample_activations = activations.repeat(2, axis=1).repeat(2, axis=2)
+        self.argmax_mask = upsample_activations == x
 
-        for depth, layer in enumerate(x):
-            patches = []
-            for i in range(pool_shape[0]):
-                for j in range(pool_shape[1]):
-                    y = self.pool_size[0] * i
-                    x = self.pool_size[1] * j
-                    patch = layer[y:y+self.pool_size[0], x:x+self.pool_size[1]]
-                    patches.append(patch)
-
-                    argmax_i = np.argmax(patch)
-                    self.argmax[depth][i][j] = np.array([y + (argmax_i // self.pool_size[1]), x + (argmax_i % self.pool_size[0])])
-
-            pool_layer = np.array([np.max(patch) for patch in patches]).reshape(pool_shape)
-            layers.append(pool_layer)
-
-        return np.array(layers)
+        return activations
 
     def backprop(self, prev_layer):
-        prev_error = np.zeros(self.input_shape)
-        for depth in range(self.error.shape[0]):
-            for i in range(self.error.shape[1]):
-                for j in range(self.error.shape[2]):
-                    (y, x) = self.argmax[depth][i][j]
-                    prev_error[depth][y][x] = self.error[depth][i][j]
-
-        return prev_error
+        upsample_error = self.error.repeat(2, axis=1).repeat(2, axis=2)
+        return upsample_error * self.argmax_mask
 
     def output_num(self):
         return [

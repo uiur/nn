@@ -37,31 +37,15 @@ batch_size = 30
 early_stop_wait = 0
 prev_valid_loss = 100000.
 
-import time
-t = time.time()
-n = 1000
-for i in range(n):
-    net.feedforward(X_train[0])
-
-print((time.time() - t) / n)
-
-t = time.time()
-n = 1000
-for i in range(n):
-    net.backprop(X_train[0:1], y_train[0:1])
-
-print((time.time() - t) / n)
-
-
 for epoch in range(50):
     for i in range(len(X_train) // batch_size):
         X_batch, y_batch = util.batch(X_train, y_train, batch_size=batch_size)
         net.train_on_batch(X_batch, y_batch, learning_rate=0.1)
 
-        train_accuracy, train_loss = evaluate(net, X_batch, y_batch)
-        valid_accuracy, valid_loss = evaluate(net, X_valid, y_valid)
+    train_accuracy, train_loss = evaluate(net, X_batch, y_batch)
+    valid_accuracy, valid_loss = evaluate(net, X_valid, y_valid)
 
-        print("epoch: %d\ttrain_accuracy: %f\ttrain_loss: %f\tvalid_accuracy: %f\tvalid_loss: %f" % (epoch, train_accuracy, train_loss, valid_accuracy, valid_loss))
+    print("epoch: %d\ttrain_accuracy: %f\ttrain_loss: %f\tvalid_accuracy: %f\tvalid_loss: %f" % (epoch, train_accuracy, train_loss, valid_accuracy, valid_loss))
 
     # early stopping
     if valid_loss > prev_valid_loss:

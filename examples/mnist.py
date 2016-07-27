@@ -33,7 +33,7 @@ prev_valid_loss = 100000.
 for epoch in range(50):
     for i in range(len(X_train) // batch_size):
         X_batch, y_batch = util.batch(X_train, y_train, batch_size=batch_size)
-        net.train_on_batch(X_batch, y_batch, learning_rate=0.1)
+        net.train_on_batch(X_batch, y_batch, learning_rate=.1)
 
     train_accuracy, train_loss = evaluate(net, X_batch, y_batch)
     valid_accuracy, valid_loss = evaluate(net, X_valid, y_valid)
